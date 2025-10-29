@@ -1,0 +1,853 @@
++   1 <!DOCTYPE html>
++   2 <html lang="pt-BR">
++   3 <head>
++   4     <meta charset="UTF-8">
++   5     <meta name="viewport" content="width=device-width, initial-scale=1.0">
++   6     <title>TaskFlow - Gestão de Projetos</title>
++   7     <script src="https://cdn.tailwindcss.com"></script>
++   8     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
++   9     <style>
++  10         * {
++  11             font-family: 'Inter', sans-serif;
++  12         }
++  13         
++  14         :root {
++  15             --primary: #5D5CDE;
++  16             --primary-hover: #4a49c5;
++  17         }
++  18         
++  19         .dragging {
++  20             opacity: 0.5;
++  21         }
++  22         
++  23         .drag-over {
++  24             background-color: rgba(93, 92, 222, 0.1);
++  25         }
++  26         
++  27         .card-hover {
++  28             transition: transform 0.2s, box-shadow 0.2s;
++  29         }
++  30         
++  31         .card-hover:hover {
++  32             transform: translateY(-2px);
++  33             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
++  34         }
++  35         
++  36         .scrollbar-hide::-webkit-scrollbar {
++  37             display: none;
++  38         }
++  39         
++  40         .scrollbar-hide {
++  41             -ms-overflow-style: none;
++  42             scrollbar-width: none;
++  43         }
++  44         
++  45         .modal-overlay {
++  46             animation: fadeIn 0.2s ease-in-out;
++  47         }
++  48         
++  49         @keyframes fadeIn {
++  50             from { opacity: 0; }
++  51             to { opacity: 1; }
++  52         }
++  53         
++  54         .slide-in {
++  55             animation: slideIn 0.3s ease-out;
++  56         }
++  57         
++  58         @keyframes slideIn {
++  59             from {
++  60                 transform: translateY(-20px);
++  61                 opacity: 0;
++  62             }
++  63             to {
++  64                 transform: translateY(0);
++  65                 opacity: 1;
++  66             }
++  67         }
++  68         
++  69         .btn-primary {
++  70             background-color: var(--primary);
++  71             color: white;
++  72             transition: background-color 0.2s;
++  73         }
++  74         
++  75         .btn-primary:hover {
++  76             background-color: var(--primary-hover);
++  77         }
++  78         
++  79         .list-container {
++  80             min-width: 280px;
++  81             max-width: 280px;
++  82         }
++  83         
++  84         @media (max-width: 640px) {
++  85             .list-container {
++  86                 min-width: 260px;
++  87                 max-width: 260px;
++  88             }
++  89         }
++  90     </style>
++  91 </head>
++  92 <body class="bg-gray-50 dark:bg-gray-900">
++  93     <!-- Login/Register Screen -->
++  94     <div id="authScreen" class="min-h-screen flex items-center justify-center p-4">
++  95         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md slide-in">
++  96             <div class="text-center mb-8">
++  97                 <h1 class="text-4xl font-bold text-gray-800 dark:text-white mb-2">TaskFlow</h1>
++  98                 <p class="text-gray-600 dark:text-gray-400">Gerencie seus projetos com eficiência</p>
++  99             </div>
++ 100             
++ 101             <!-- Login Form -->
++ 102             <div id="loginForm">
++ 103                 <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Entrar</h2>
++ 104                 <div class="space-y-4">
++ 105                     <div>
++ 106                         <label class="block text-gray-700 dark:text-gray-300 text-base mb-2">Usuário</label>
++ 107                         <input type="text" id="loginUsername" 
++ 108                                class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
++ 109                                placeholder="Digite seu usuário">
++ 110                     </div>
++ 111                     <div>
++ 112                         <label class="block text-gray-700 dark:text-gray-300 text-base mb-2">Senha</label>
++ 113                         <input type="password" id="loginPassword" 
++ 114                                class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
++ 115                                placeholder="Digite sua senha">
++ 116                     </div>
++ 117                     <button onclick="login()" 
++ 118                             class="w-full btn-primary py-3 rounded-lg font-semibold text-base">
++ 119                         Entrar
++ 120                     </button>
++ 121                 </div>
++ 122                 <p class="text-center text-gray-600 dark:text-gray-400 mt-6 text-base">
++ 123                     Não tem uma conta? 
++ 124                     <button onclick="showRegister()" class="text-purple-600 dark:text-purple-400 font-semibold hover:underline">
++ 125                         Criar conta
++ 126                     </button>
++ 127                 </p>
++ 128             </div>
++ 129             
++ 130             <!-- Register Form -->
++ 131             <div id="registerForm" class="hidden">
++ 132                 <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Criar Conta</h2>
++ 133                 <div class="space-y-4">
++ 134                     <div>
++ 135                         <label class="block text-gray-700 dark:text-gray-300 text-base mb-2">Nome Completo</label>
++ 136                         <input type="text" id="registerName" 
++ 137                                class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
++ 138                                placeholder="Digite seu nome">
++ 139                     </div>
++ 140                     <div>
++ 141                         <label class="block text-gray-700 dark:text-gray-300 text-base mb-2">Usuário</label>
++ 142                         <input type="text" id="registerUsername" 
++ 143                                class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
++ 144                                placeholder="Escolha um usuário">
++ 145                     </div>
++ 146                     <div>
++ 147                         <label class="block text-gray-700 dark:text-gray-300 text-base mb-2">Senha</label>
++ 148                         <input type="password" id="registerPassword" 
++ 149                                class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
++ 150                                placeholder="Crie uma senha">
++ 151                     </div>
++ 152                     <button onclick="register()" 
++ 153                             class="w-full btn-primary py-3 rounded-lg font-semibold text-base">
++ 154                         Criar Conta
++ 155                     </button>
++ 156                 </div>
++ 157                 <p class="text-center text-gray-600 dark:text-gray-400 mt-6 text-base">
++ 158                     Já tem uma conta? 
++ 159                     <button onclick="showLogin()" class="text-purple-600 dark:text-purple-400 font-semibold hover:underline">
++ 160                         Entrar
++ 161                     </button>
++ 162                 </p>
++ 163             </div>
++ 164         </div>
++ 165     </div>
++ 166 
++ 167     <!-- Main App -->
++ 168     <div id="mainApp" class="hidden">
++ 169         <!-- Header -->
++ 170         <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
++ 171             <div class="px-4 py-4 flex items-center justify-between">
++ 172                 <div class="flex items-center space-x-4">
++ 173                     <h1 class="text-2xl font-bold text-gray-800 dark:text-white">TaskFlow</h1>
++ 174                     <span id="boardTitle" class="text-lg text-gray-600 dark:text-gray-400"></span>
++ 175                 </div>
++ 176                 <div class="flex items-center space-x-4">
++ 177                     <span id="userName" class="text-base text-gray-700 dark:text-gray-300"></span>
++ 178                     <button onclick="logout()" 
++ 179                             class="px-4 py-2 text-base text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
++ 180                         Sair
++ 181                     </button>
++ 182                 </div>
++ 183             </div>
++ 184         </header>
++ 185 
++ 186         <!-- Board Container -->
++ 187         <div class="p-6">
++ 188             <div class="mb-6 flex items-center justify-between">
++ 189                 <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Meu Quadro de Tarefas</h2>
++ 190                 <button onclick="showAddListModal()" 
++ 191                         class="btn-primary px-4 py-2 rounded-lg font-semibold flex items-center space-x-2 text-base">
++ 192                     <span>+ Nova Lista</span>
++ 193                 </button>
++ 194             </div>
++ 195             
++ 196             <!-- Lists Container -->
++ 197             <div id="listsContainer" class="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide">
++ 198                 <!-- Lists will be added here dynamically -->
++ 199             </div>
++ 200             
++ 201             <!-- Empty State -->
++ 202             <div id="emptyState" class="text-center py-16">
++ 203                 <div class="text-gray-400 dark:text-gray-600 mb-4">
++ 204                     <svg class="mx-auto h-24 w-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++ 205                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
++ 206                               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
++ 207                     </svg>
++ 208                 </div>
++ 209                 <h3 class="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
++ 210                     Nenhuma lista criada ainda
++ 211                 </h3>
++ 212                 <p class="text-gray-500 dark:text-gray-500 mb-4">
++ 213                     Comece criando sua primeira lista de tarefas clicando no botão acima
++ 214                 </p>
++ 215             </div>
++ 216         </div>
++ 217     </div>
++ 218 
++ 219     <!-- Add/Edit List Modal -->
++ 220     <div id="listModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 modal-overlay p-4">
++ 221         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md slide-in">
++ 222             <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4" id="listModalTitle">Nova Lista</h3>
++ 223             <div class="space-y-4">
++ 224                 <div>
++ 225                     <label class="block text-gray-700 dark:text-gray-300 text-base mb-2">Nome da Lista</label>
++ 226                     <input type="text" id="listNameInput" 
++ 227                            class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
++ 228                            placeholder="Ex: A Fazer, Em Progresso, Concluído">
++ 229                 </div>
++ 230                 <div class="flex justify-end space-x-3">
++ 231                     <button onclick="closeListModal()" 
++ 232                             class="px-4 py-2 text-base text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
++ 233                         Cancelar
++ 234                     </button>
++ 235                     <button onclick="saveList()" 
++ 236                             class="btn-primary px-4 py-2 rounded-lg font-semibold text-base">
++ 237                         Salvar
++ 238                     </button>
++ 239                 </div>
++ 240             </div>
++ 241         </div>
++ 242     </div>
++ 243 
++ 244     <!-- Add/Edit Task Modal -->
++ 245     <div id="taskModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 modal-overlay p-4">
++ 246         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl slide-in max-h-[90vh] overflow-y-auto">
++ 247             <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4" id="taskModalTitle">Nova Tarefa</h3>
++ 248             <div class="space-y-4">
++ 249                 <div>
++ 250                     <label class="block text-gray-700 dark:text-gray-300 text-base mb-2">Título da Tarefa</label>
++ 251                     <input type="text" id="taskTitleInput" 
++ 252                            class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
++ 253                            placeholder="Digite o título da tarefa">
++ 254                 </div>
++ 255                 <div>
++ 256                     <label class="block text-gray-700 dark:text-gray-300 text-base mb-2">Descrição</label>
++ 257                     <textarea id="taskDescriptionInput" rows="6"
++ 258                               class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white resize-none"
++ 259                               placeholder="Descreva os detalhes da tarefa..."></textarea>
++ 260                 </div>
++ 261                 <div class="flex justify-end space-x-3">
++ 262                     <button onclick="closeTaskModal()" 
++ 263                             class="px-4 py-2 text-base text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
++ 264                         Cancelar
++ 265                     </button>
++ 266                     <button onclick="saveTask()" 
++ 267                             class="btn-primary px-4 py-2 rounded-lg font-semibold text-base">
++ 268                         Salvar
++ 269                     </button>
++ 270                 </div>
++ 271             </div>
++ 272         </div>
++ 273     </div>
++ 274 
++ 275     <!-- View Task Details Modal -->
++ 276     <div id="taskDetailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 modal-overlay p-4">
++ 277         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl slide-in max-h-[90vh] overflow-y-auto">
++ 278             <div class="flex justify-between items-start mb-4">
++ 279                 <h3 class="text-2xl font-semibold text-gray-800 dark:text-white" id="taskDetailsTitle"></h3>
++ 280                 <button onclick="closeTaskDetailsModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
++ 281                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++ 282                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
++ 283                     </svg>
++ 284                 </button>
++ 285             </div>
++ 286             <div class="mb-6">
++ 287                 <h4 class="text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">Descrição</h4>
++ 288                 <p id="taskDetailsDescription" class="text-base text-gray-600 dark:text-gray-400 whitespace-pre-wrap"></p>
++ 289             </div>
++ 290             <div class="flex justify-end space-x-3">
++ 291                 <button onclick="deleteTaskFromDetails()" 
++ 292                         class="px-4 py-2 text-base bg-red-500 text-white hover:bg-red-600 rounded-lg font-semibold">
++ 293                     Excluir
++ 294                 </button>
++ 295                 <button onclick="editTaskFromDetails()" 
++ 296                         class="btn-primary px-4 py-2 rounded-lg font-semibold text-base">
++ 297                     Editar
++ 298                 </button>
++ 299             </div>
++ 300         </div>
++ 301     </div>
++ 302 
++ 303     <!-- Custom Confirm Dialog -->
++ 304     <div id="confirmDialog" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 modal-overlay p-4">
++ 305         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm slide-in">
++ 306             <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4" id="confirmTitle"></h3>
++ 307             <p class="text-base text-gray-600 dark:text-gray-400 mb-6" id="confirmMessage"></p>
++ 308             <div class="flex justify-end space-x-3">
++ 309                 <button onclick="closeConfirmDialog(false)" 
++ 310                         class="px-4 py-2 text-base text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
++ 311                     Cancelar
++ 312                 </button>
++ 313                 <button onclick="closeConfirmDialog(true)" 
++ 314                         class="px-4 py-2 text-base bg-red-500 text-white hover:bg-red-600 rounded-lg font-semibold">
++ 315                     Confirmar
++ 316                 </button>
++ 317             </div>
++ 318         </div>
++ 319     </div>
++ 320 
++ 321     <script>
++ 322         // Database Management
++ 323         class Database {
++ 324             constructor() {
++ 325                 this.currentUser = null;
++ 326             }
++ 327             
++ 328             getUsers() {
++ 329                 return JSON.parse(localStorage.getItem('taskflow_users') || '[]');
++ 330             }
++ 331             
++ 332             saveUsers(users) {
++ 333                 localStorage.setItem('taskflow_users', JSON.stringify(users));
++ 334             }
++ 335             
++ 336             getUserData(username) {
++ 337                 return JSON.parse(localStorage.getItem(`taskflow_data_${username}`) || '{"lists": [], "lastView": null}');
++ 338             }
++ 339             
++ 340             saveUserData(username, data) {
++ 341                 localStorage.setItem(`taskflow_data_${username}`, JSON.stringify(data));
++ 342             }
++ 343             
++ 344             createUser(name, username, password) {
++ 345                 const users = this.getUsers();
++ 346                 if (users.find(u => u.username === username)) {
++ 347                     return { success: false, message: 'Usuário já existe' };
++ 348                 }
++ 349                 
++ 350                 users.push({ name, username, password, createdAt: new Date().toISOString() });
++ 351                 this.saveUsers(users);
++ 352                 
++ 353                 // Initialize user data
++ 354                 this.saveUserData(username, {
++ 355                     lists: [],
++ 356                     lastView: new Date().toISOString()
++ 357                 });
++ 358                 
++ 359                 return { success: true };
++ 360             }
++ 361             
++ 362             authenticateUser(username, password) {
++ 363                 const users = this.getUsers();
++ 364                 const user = users.find(u => u.username === username && u.password === password);
++ 365                 
++ 366                 if (user) {
++ 367                     this.currentUser = user;
++ 368                     // Update last view
++ 369                     const userData = this.getUserData(username);
++ 370                     userData.lastView = new Date().toISOString();
++ 371                     this.saveUserData(username, userData);
++ 372                     return { success: true, user };
++ 373                 }
++ 374                 
++ 375                 return { success: false, message: 'Usuário ou senha incorretos' };
++ 376             }
++ 377             
++ 378             getCurrentUserData() {
++ 379                 if (!this.currentUser) return null;
++ 380                 return this.getUserData(this.currentUser.username);
++ 381             }
++ 382             
++ 383             saveCurrentUserData(data) {
++ 384                 if (!this.currentUser) return;
++ 385                 data.lastView = new Date().toISOString();
++ 386                 this.saveUserData(this.currentUser.username, data);
++ 387             }
++ 388         }
++ 389 
++ 390         const db = new Database();
++ 391         let currentListId = null;
++ 392         let currentTaskId = null;
++ 393         let editingListId = null;
++ 394         let editingTaskId = null;
++ 395         let confirmCallback = null;
++ 396 
++ 397         // Dark mode support
++ 398         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
++ 399             document.documentElement.classList.add('dark');
++ 400         }
++ 401         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
++ 402             if (event.matches) {
++ 403                 document.documentElement.classList.add('dark');
++ 404             } else {
++ 405                 document.documentElement.classList.remove('dark');
++ 406             }
++ 407         });
++ 408 
++ 409         // Authentication Functions
++ 410         function showLogin() {
++ 411             document.getElementById('loginForm').classList.remove('hidden');
++ 412             document.getElementById('registerForm').classList.add('hidden');
++ 413         }
++ 414 
++ 415         function showRegister() {
++ 416             document.getElementById('loginForm').classList.add('hidden');
++ 417             document.getElementById('registerForm').classList.remove('hidden');
++ 418         }
++ 419 
++ 420         function login() {
++ 421             const username = document.getElementById('loginUsername').value.trim();
++ 422             const password = document.getElementById('loginPassword').value;
++ 423             
++ 424             if (!username || !password) {
++ 425                 showAlert('Atenção', 'Por favor, preencha todos os campos');
++ 426                 return;
++ 427             }
++ 428             
++ 429             const result = db.authenticateUser(username, password);
++ 430             if (result.success) {
++ 431                 document.getElementById('authScreen').classList.add('hidden');
++ 432                 document.getElementById('mainApp').classList.remove('hidden');
++ 433                 document.getElementById('userName').textContent = result.user.name;
++ 434                 loadBoard();
++ 435             } else {
++ 436                 showAlert('Erro', result.message);
++ 437             }
++ 438         }
++ 439 
++ 440         function register() {
++ 441             const name = document.getElementById('registerName').value.trim();
++ 442             const username = document.getElementById('registerUsername').value.trim();
++ 443             const password = document.getElementById('registerPassword').value;
++ 444             
++ 445             if (!name || !username || !password) {
++ 446                 showAlert('Atenção', 'Por favor, preencha todos os campos');
++ 447                 return;
++ 448             }
++ 449             
++ 450             if (username.length < 3) {
++ 451                 showAlert('Atenção', 'O usuário deve ter pelo menos 3 caracteres');
++ 452                 return;
++ 453             }
++ 454             
++ 455             if (password.length < 4) {
++ 456                 showAlert('Atenção', 'A senha deve ter pelo menos 4 caracteres');
++ 457                 return;
++ 458             }
++ 459             
++ 460             const result = db.createUser(name, username, password);
++ 461             if (result.success) {
++ 462                 showAlert('Sucesso', 'Conta criada com sucesso! Faça login para continuar');
++ 463                 showLogin();
++ 464                 document.getElementById('registerName').value = '';
++ 465                 document.getElementById('registerUsername').value = '';
++ 466                 document.getElementById('registerPassword').value = '';
++ 467             } else {
++ 468                 showAlert('Erro', result.message);
++ 469             }
++ 470         }
++ 471 
++ 472         function logout() {
++ 473             showConfirmDialog('Sair', 'Tem certeza que deseja sair?', (confirmed) => {
++ 474                 if (confirmed) {
++ 475                     db.currentUser = null;
++ 476                     document.getElementById('authScreen').classList.remove('hidden');
++ 477                     document.getElementById('mainApp').classList.add('hidden');
++ 478                     document.getElementById('loginUsername').value = '';
++ 479                     document.getElementById('loginPassword').value = '';
++ 480                 }
++ 481             });
++ 482         }
++ 483 
++ 484         // Alert Dialog
++ 485         function showAlert(title, message) {
++ 486             const modal = document.createElement('div');
++ 487             modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 modal-overlay p-4';
++ 488             modal.innerHTML = `
++ 489                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm slide-in">
++ 490                     <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">${title}</h3>
++ 491                     <p class="text-base text-gray-600 dark:text-gray-400 mb-6">${message}</p>
++ 492                     <div class="flex justify-end">
++ 493                         <button onclick="this.closest('.fixed').remove()" 
++ 494                                 class="btn-primary px-4 py-2 rounded-lg font-semibold text-base">
++ 495                             OK
++ 496                         </button>
++ 497                     </div>
++ 498                 </div>
++ 499             `;
++ 500             document.body.appendChild(modal);
++ 501         }
++ 502 
++ 503         // Confirm Dialog
++ 504         function showConfirmDialog(title, message, callback) {
++ 505             confirmCallback = callback;
++ 506             document.getElementById('confirmTitle').textContent = title;
++ 507             document.getElementById('confirmMessage').textContent = message;
++ 508             document.getElementById('confirmDialog').classList.remove('hidden');
++ 509         }
++ 510 
++ 511         function closeConfirmDialog(confirmed) {
++ 512             document.getElementById('confirmDialog').classList.add('hidden');
++ 513             if (confirmCallback) {
++ 514                 confirmCallback(confirmed);
++ 515                 confirmCallback = null;
++ 516             }
++ 517         }
++ 518 
++ 519         // Board Functions
++ 520         function loadBoard() {
++ 521             const userData = db.getCurrentUserData();
++ 522             if (!userData) return;
++ 523             
++ 524             const listsContainer = document.getElementById('listsContainer');
++ 525             listsContainer.innerHTML = '';
++ 526             
++ 527             if (!userData.lists || userData.lists.length === 0) {
++ 528                 document.getElementById('emptyState').classList.remove('hidden');
++ 529                 return;
++ 530             }
++ 531             
++ 532             document.getElementById('emptyState').classList.add('hidden');
++ 533             
++ 534             userData.lists.forEach(list => {
++ 535                 renderList(list);
++ 536             });
++ 537         }
++ 538 
++ 539         function renderList(list) {
++ 540             const listsContainer = document.getElementById('listsContainer');
++ 541             
++ 542             const listElement = document.createElement('div');
++ 543             listElement.className = 'list-container bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex-shrink-0';
++ 544             listElement.dataset.listId = list.id;
++ 545             
++ 546             const tasksHtml = list.tasks.map(task => `
++ 547                 <div class="bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm mb-2 cursor-pointer card-hover" 
++ 548                      draggable="true" 
++ 549                      data-task-id="${task.id}"
++ 550                      onclick="showTaskDetails('${list.id}', '${task.id}')">
++ 551                     <h4 class="font-medium text-gray-800 dark:text-white text-base mb-1">${escapeHtml(task.title)}</h4>
++ 552                     ${task.description ? `<p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">${escapeHtml(task.description)}</p>` : ''}
++ 553                 </div>
++ 554             `).join('');
++ 555             
++ 556             listElement.innerHTML = `
++ 557                 <div class="flex justify-between items-center mb-3">
++ 558                     <h3 class="font-semibold text-gray-800 dark:text-white text-base">${escapeHtml(list.name)}</h3>
++ 559                     <div class="flex space-x-1">
++ 560                         <button onclick="editList('${list.id}')" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-1" title="Editar lista">
++ 561                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++ 562                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
++ 563                             </svg>
++ 564                         </button>
++ 565                         <button onclick="deleteList('${list.id}')" class="text-gray-500 hover:text-red-600 dark:hover:text-red-400 p-1" title="Excluir lista">
++ 566                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++ 567                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
++ 568                             </svg>
++ 569                         </button>
++ 570                     </div>
++ 571                 </div>
++ 572                 <div class="tasks-container mb-3 max-h-96 overflow-y-auto scrollbar-hide" data-list-id="${list.id}">
++ 573                     ${tasksHtml}
++ 574                 </div>
++ 575                 <button onclick="showAddTaskModal('${list.id}')" 
++ 576                         class="w-full text-left px-3 py-2 text-base text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition">
++ 577                     + Adicionar Tarefa
++ 578                 </button>
++ 579             `;
++ 580             
++ 581             listsContainer.appendChild(listElement);
++ 582             
++ 583             // Add drag and drop event listeners
++ 584             const tasksContainer = listElement.querySelector('.tasks-container');
++ 585             tasksContainer.addEventListener('dragover', handleDragOver);
++ 586             tasksContainer.addEventListener('drop', handleDrop);
++ 587             tasksContainer.addEventListener('dragleave', handleDragLeave);
++ 588             
++ 589             // Add drag event listeners to tasks
++ 590             listElement.querySelectorAll('[draggable="true"]').forEach(task => {
++ 591                 task.addEventListener('dragstart', handleDragStart);
++ 592                 task.addEventListener('dragend', handleDragEnd);
++ 593             });
++ 594         }
++ 595 
++ 596         // List Management
++ 597         function showAddListModal() {
++ 598             editingListId = null;
++ 599             document.getElementById('listModalTitle').textContent = 'Nova Lista';
++ 600             document.getElementById('listNameInput').value = '';
++ 601             document.getElementById('listModal').classList.remove('hidden');
++ 602             setTimeout(() => document.getElementById('listNameInput').focus(), 100);
++ 603         }
++ 604 
++ 605         function editList(listId) {
++ 606             const userData = db.getCurrentUserData();
++ 607             const list = userData.lists.find(l => l.id === listId);
++ 608             if (!list) return;
++ 609             
++ 610             editingListId = listId;
++ 611             document.getElementById('listModalTitle').textContent = 'Editar Lista';
++ 612             document.getElementById('listNameInput').value = list.name;
++ 613             document.getElementById('listModal').classList.remove('hidden');
++ 614             setTimeout(() => document.getElementById('listNameInput').focus(), 100);
++ 615         }
++ 616 
++ 617         function closeListModal() {
++ 618             document.getElementById('listModal').classList.add('hidden');
++ 619             editingListId = null;
++ 620         }
++ 621 
++ 622         function saveList() {
++ 623             const name = document.getElementById('listNameInput').value.trim();
++ 624             
++ 625             if (!name) {
++ 626                 showAlert('Atenção', 'Por favor, insira um nome para a lista');
++ 627                 return;
++ 628             }
++ 629             
++ 630             const userData = db.getCurrentUserData();
++ 631             
++ 632             if (editingListId) {
++ 633                 // Edit existing list
++ 634                 const list = userData.lists.find(l => l.id === editingListId);
++ 635                 if (list) {
++ 636                     list.name = name;
++ 637                 }
++ 638             } else {
++ 639                 // Create new list
++ 640                 const newList = {
++ 641                     id: generateId(),
++ 642                     name: name,
++ 643                     tasks: [],
++ 644                     createdAt: new Date().toISOString()
++ 645                 };
++ 646                 userData.lists.push(newList);
++ 647             }
++ 648             
++ 649             db.saveCurrentUserData(userData);
++ 650             loadBoard();
++ 651             closeListModal();
++ 652         }
++ 653 
++ 654         function deleteList(listId) {
++ 655             showConfirmDialog('Excluir Lista', 'Tem certeza que deseja excluir esta lista e todas as suas tarefas?', (confirmed) => {
++ 656                 if (confirmed) {
++ 657                     const userData = db.getCurrentUserData();
++ 658                     userData.lists = userData.lists.filter(l => l.id !== listId);
++ 659                     db.saveCurrentUserData(userData);
++ 660                     loadBoard();
++ 661                 }
++ 662             });
++ 663         }
++ 664 
++ 665         // Task Management
++ 666         function showAddTaskModal(listId) {
++ 667             currentListId = listId;
++ 668             editingTaskId = null;
++ 669             document.getElementById('taskModalTitle').textContent = 'Nova Tarefa';
++ 670             document.getElementById('taskTitleInput').value = '';
++ 671             document.getElementById('taskDescriptionInput').value = '';
++ 672             document.getElementById('taskModal').classList.remove('hidden');
++ 673             setTimeout(() => document.getElementById('taskTitleInput').focus(), 100);
++ 674         }
++ 675 
++ 676         function closeTaskModal() {
++ 677             document.getElementById('taskModal').classList.add('hidden');
++ 678             currentListId = null;
++ 679             editingTaskId = null;
++ 680         }
++ 681 
++ 682         function saveTask() {
++ 683             const title = document.getElementById('taskTitleInput').value.trim();
++ 684             const description = document.getElementById('taskDescriptionInput').value.trim();
++ 685             
++ 686             if (!title) {
++ 687                 showAlert('Atenção', 'Por favor, insira um título para a tarefa');
++ 688                 return;
++ 689             }
++ 690             
++ 691             const userData = db.getCurrentUserData();
++ 692             const list = userData.lists.find(l => l.id === currentListId);
++ 693             
++ 694             if (!list) return;
++ 695             
++ 696             if (editingTaskId) {
++ 697                 // Edit existing task
++ 698                 const task = list.tasks.find(t => t.id === editingTaskId);
++ 699                 if (task) {
++ 700                     task.title = title;
++ 701                     task.description = description;
++ 702                 }
++ 703             } else {
++ 704                 // Create new task
++ 705                 const newTask = {
++ 706                     id: generateId(),
++ 707                     title: title,
++ 708                     description: description,
++ 709                     createdAt: new Date().toISOString()
++ 710                 };
++ 711                 list.tasks.push(newTask);
++ 712             }
++ 713             
++ 714             db.saveCurrentUserData(userData);
++ 715             loadBoard();
++ 716             closeTaskModal();
++ 717         }
++ 718 
++ 719         function showTaskDetails(listId, taskId) {
++ 720             const userData = db.getCurrentUserData();
++ 721             const list = userData.lists.find(l => l.id === listId);
++ 722             if (!list) return;
++ 723             
++ 724             const task = list.tasks.find(t => t.id === taskId);
++ 725             if (!task) return;
++ 726             
++ 727             currentListId = listId;
++ 728             currentTaskId = taskId;
++ 729             
++ 730             document.getElementById('taskDetailsTitle').textContent = task.title;
++ 731             document.getElementById('taskDetailsDescription').textContent = task.description || 'Sem descrição';
++ 732             document.getElementById('taskDetailsModal').classList.remove('hidden');
++ 733         }
++ 734 
++ 735         function closeTaskDetailsModal() {
++ 736             document.getElementById('taskDetailsModal').classList.add('hidden');
++ 737             currentListId = null;
++ 738             currentTaskId = null;
++ 739         }
++ 740 
++ 741         function editTaskFromDetails() {
++ 742             const userData = db.getCurrentUserData();
++ 743             const list = userData.lists.find(l => l.id === currentListId);
++ 744             if (!list) return;
++ 745             
++ 746             const task = list.tasks.find(t => t.id === currentTaskId);
++ 747             if (!task) return;
++ 748             
++ 749             editingTaskId = currentTaskId;
++ 750             document.getElementById('taskModalTitle').textContent = 'Editar Tarefa';
++ 751             document.getElementById('taskTitleInput').value = task.title;
++ 752             document.getElementById('taskDescriptionInput').value = task.description;
++ 753             
++ 754             closeTaskDetailsModal();
++ 755             document.getElementById('taskModal').classList.remove('hidden');
++ 756             setTimeout(() => document.getElementById('taskTitleInput').focus(), 100);
++ 757         }
++ 758 
++ 759         function deleteTaskFromDetails() {
++ 760             showConfirmDialog('Excluir Tarefa', 'Tem certeza que deseja excluir esta tarefa?', (confirmed) => {
++ 761                 if (confirmed) {
++ 762                     const userData = db.getCurrentUserData();
++ 763                     const list = userData.lists.find(l => l.id === currentListId);
++ 764                     if (list) {
++ 765                         list.tasks = list.tasks.filter(t => t.id !== currentTaskId);
++ 766                         db.saveCurrentUserData(userData);
++ 767                         loadBoard();
++ 768                         closeTaskDetailsModal();
++ 769                     }
++ 770                 }
++ 771             });
++ 772         }
++ 773 
++ 774         // Drag and Drop
++ 775         let draggedElement = null;
++ 776         let sourceListId = null;
++ 777 
++ 778         function handleDragStart(e) {
++ 779             draggedElement = e.target;
++ 780             sourceListId = e.target.closest('.list-container').dataset.listId;
++ 781             e.target.classList.add('dragging');
++ 782             e.dataTransfer.effectAllowed = 'move';
++ 783         }
++ 784 
++ 785         function handleDragEnd(e) {
++ 786             e.target.classList.remove('dragging');
++ 787         }
++ 788 
++ 789         function handleDragOver(e) {
++ 790             if (e.preventDefault) {
++ 791                 e.preventDefault();
++ 792             }
++ 793             e.dataTransfer.dropEffect = 'move';
++ 794             e.currentTarget.classList.add('drag-over');
++ 795             return false;
++ 796         }
++ 797 
++ 798         function handleDragLeave(e) {
++ 799             e.currentTarget.classList.remove('drag-over');
++ 800         }
++ 801 
++ 802         function handleDrop(e) {
++ 803             if (e.stopPropagation) {
++ 804                 e.stopPropagation();
++ 805             }
++ 806             
++ 807             e.currentTarget.classList.remove('drag-over');
++ 808             
++ 809             const targetListId = e.currentTarget.dataset.listId;
++ 810             const taskId = draggedElement.dataset.taskId;
++ 811             
++ 812             if (sourceListId !== targetListId) {
++ 813                 moveTask(taskId, sourceListId, targetListId);
++ 814             }
++ 815             
++ 816             return false;
++ 817         }
++ 818 
++ 819         function moveTask(taskId, fromListId, toListId) {
++ 820             const userData = db.getCurrentUserData();
++ 821             const fromList = userData.lists.find(l => l.id === fromListId);
++ 822             const toList = userData.lists.find(l => l.id === toListId);
++ 823             
++ 824             if (!fromList || !toList) return;
++ 825             
++ 826             const taskIndex = fromList.tasks.findIndex(t => t.id === taskId);
++ 827             if (taskIndex === -1) return;
++ 828             
++ 829             const [task] = fromList.tasks.splice(taskIndex, 1);
++ 830             toList.tasks.push(task);
++ 831             
++ 832             db.saveCurrentUserData(userData);
++ 833             loadBoard();
++ 834         }
++ 835 
++ 836         // Utility Functions
++ 837         function generateId() {
++ 838             return Date.now().toString(36) + Math.random().toString(36).substr(2);
++ 839         }
++ 840 
++ 841         function escapeHtml(text) {
++ 842             const div = document.createElement('div');
++ 843             div.textContent = text;
++ 844             return div.innerHTML;
++ 845         }
++ 846 
++ 847         // Initialize
++ 848         window.addEventListener('load', () => {
++ 849             // Check if user is already logged in (you could implement session persistence if needed)
++ 850         });
++ 851     </script>
++ 852 </body>
++ 853 </html>

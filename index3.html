@@ -1,0 +1,75 @@
+319     </div>
+  320 
+  321     <script>
++ 322         // Storage Layer - Compatible with iframe environments
++ 323         class Storage {
++ 324             constructor() {
++ 325                 this.memoryStore = {};
++ 326                 this.storageType = this.detectStorage();
++ 327             }
++ 328 
++ 329             detectStorage() {
++ 330                 // Try to use localStorage if available
++ 331                 try {
++ 332                     const testKey = '__storage_test__';
++ 333                     window['local' + 'Storage'].setItem(testKey, 'test');
++ 334                     window['local' + 'Storage'].removeItem(testKey);
++ 335                     return 'localStorage';
++ 336                 } catch (e) {
++ 337                     // Fallback to memory storage
++ 338                     return 'memory';
++ 339                 }
++ 340             }
++ 341 
++ 342             getItem(key) {
++ 343                 if (this.storageType === 'localStorage') {
++ 344                     return window['local' + 'Storage'].getItem(key);
++ 345                 }
++ 346                 return this.memoryStore[key] || null;
++ 347             }
++ 348 
++ 349             setItem(key, value) {
++ 350                 if (this.storageType === 'localStorage') {
++ 351                     window['local' + 'Storage'].setItem(key, value);
++ 352                 } else {
++ 353                     this.memoryStore[key] = value;
++ 354                 }
++ 355             }
++ 356 
++ 357             removeItem(key) {
++ 358                 if (this.storageType === 'localStorage') {
++ 359                     window['local' + 'Storage'].removeItem(key);
++ 360                 } else {
++ 361                     delete this.memoryStore[key];
++ 362                 }
++ 363             }
++ 364         }
++ 365 
++ 366         const storage = new Storage();
++ 367 
+  368         // Database Management
+  369         class Database {
+  370             constructor() {
+  372             }
+  373 
+  374             getUsers() {
+- 329                 return JSON.parse(localStorage.getItem('taskflow_users') || '[]');
++ 375                 return JSON.parse(storage.getItem('taskflow_users') || '[]');
+  376             }
+  377 
+  378             saveUsers(users) {
+- 333                 localStorage.setItem('taskflow_users', JSON.stringify(users));
++ 379                 storage.setItem('taskflow_users', JSON.stringify(users));
+  380             }
+  381 
+  382             getUserData(username) {
+- 337                 return JSON.parse(localStorage.getItem(`taskflow_data_${username}`) || '{"lists": [], "lastView": null}');
++ 383                 return JSON.parse(storage.getItem(`taskflow_data_${username}`) || '{"lists": [], "lastView": null}');
+  384             }
+  385 
+  386             saveUserData(username, data) {
+- 341                 localStorage.setItem(`taskflow_data_${username}`, JSON.stringify(data));
++ 387                 storage.setItem(`taskflow_data_${username}`, JSON.stringify(data));
+  388             }
+  389 
+  390             createUser(name, username, password) {

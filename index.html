@@ -1,0 +1,639 @@
++   1 <!DOCTYPE html>
++   2 <html lang="pt-BR">
++   3 <head>
++   4     <meta charset="UTF-8">
++   5     <meta name="viewport" content="width=device-width, initial-scale=1.0">
++   6     <title>TaskFlow - Gestão de Projetos</title>
++   7     <script src="https://cdn.tailwindcss.com"></script>
++   8     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
++   9     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
++  10     <script>
++  11         tailwind.config = {
++  12             darkMode: 'class',
++  13             theme: {
++  14                 extend: {
++  15                     colors: {
++  16                         primary: '#5D5CDE',
++  17                         'primary-dark': '#4A49B8',
++  18                     }
++  19                 }
++  20             }
++  21         }
++  22     </script>
++  23     <style>
++  24         .sortable-ghost {
++  25             opacity: 0.4;
++  26             background: #5D5CDE20;
++  27         }
++  28         .sortable-drag {
++  29             opacity: 0.8;
++  30         }
++  31         .card-animation {
++  32             animation: slideIn 0.3s ease-out;
++  33         }
++  34         @keyframes slideIn {
++  35             from {
++  36                 opacity: 0;
++  37                 transform: translateY(-10px);
++  38             }
++  39             to {
++  40                 opacity: 1;
++  41                 transform: translateY(0);
++  42             }
++  43         }
++  44         .gradient-bg {
++  45             background: linear-gradient(135deg, #5D5CDE 0%, #7B7AE8 100%);
++  46         }
++  47     </style>
++  48 </head>
++  49 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
++  50     <!-- Auth Screen -->
++  51     <div id="authScreen" class="min-h-screen flex items-center justify-center p-4">
++  52         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 w-full max-w-md">
++  53             <div class="text-center mb-8">
++  54                 <div class="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-xl mb-4">
++  55                     <i class="fas fa-tasks text-white text-2xl"></i>
++  56                 </div>
++  57                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white">TaskFlow</h1>
++  58                 <p class="text-gray-600 dark:text-gray-400 mt-2">Gerencie seus projetos com facilidade</p>
++  59             </div>
++  60 
++  61             <!-- Login Form -->
++  62             <div id="loginForm">
++  63                 <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Entrar</h2>
++  64                 <div class="space-y-4">
++  65                     <div>
++  66                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email ou Usuário</label>
++  67                         <input type="text" id="loginUsername" class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="seu@email.com">
++  68                     </div>
++  69                     <div>
++  70                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Senha</label>
++  71                         <input type="password" id="loginPassword" class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="••••••••">
++  72                     </div>
++  73                     <button onclick="login()" class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity">
++  74                         Entrar
++  75                     </button>
++  76                     <p class="text-center text-sm text-gray-600 dark:text-gray-400">
++  77                         Não tem conta? <button onclick="showRegister()" class="text-primary hover:underline font-semibold">Cadastre-se</button>
++  78                     </p>
++  79                 </div>
++  80             </div>
++  81 
++  82             <!-- Register Form -->
++  83             <div id="registerForm" class="hidden">
++  84                 <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Criar Conta</h2>
++  85                 <div class="space-y-4">
++  86                     <div>
++  87                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nome Completo</label>
++  88                         <input type="text" id="registerName" class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="Seu nome">
++  89                     </div>
++  90                     <div>
++  91                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
++  92                         <input type="email" id="registerEmail" class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="seu@email.com">
++  93                     </div>
++  94                     <div>
++  95                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Senha</label>
++  96                         <input type="password" id="registerPassword" class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="Mínimo 6 caracteres">
++  97                     </div>
++  98                     <button onclick="register()" class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity">
++  99                         Cadastrar
++ 100                     </button>
++ 101                     <p class="text-center text-sm text-gray-600 dark:text-gray-400">
++ 102                         Já tem conta? <button onclick="showLogin()" class="text-primary hover:underline font-semibold">Entrar</button>
++ 103                     </p>
++ 104                 </div>
++ 105             </div>
++ 106         </div>
++ 107     </div>
++ 108 
++ 109     <!-- Main App -->
++ 110     <div id="mainApp" class="hidden min-h-screen">
++ 111         <!-- Header -->
++ 112         <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
++ 113             <div class="px-4 py-4">
++ 114                 <div class="flex items-center justify-between">
++ 115                     <div class="flex items-center space-x-4">
++ 116                         <button onclick="showBoards()" class="flex items-center space-x-2 hover:opacity-80 transition-opacity">
++ 117                             <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
++ 118                                 <i class="fas fa-tasks text-white"></i>
++ 119                             </div>
++ 120                             <span class="text-xl font-bold text-gray-900 dark:text-white">TaskFlow</span>
++ 121                         </button>
++ 122                     </div>
++ 123                     <div class="flex items-center space-x-3">
++ 124                         <span class="text-sm text-gray-600 dark:text-gray-400 hidden sm:inline" id="userNameDisplay"></span>
++ 125                         <button onclick="logout()" class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
++ 126                             <i class="fas fa-sign-out-alt mr-2"></i>Sair
++ 127                         </button>
++ 128                     </div>
++ 129                 </div>
++ 130             </div>
++ 131         </header>
++ 132 
++ 133         <!-- Boards View -->
++ 134         <div id="boardsView" class="p-4 md:p-8">
++ 135             <div class="max-w-7xl mx-auto">
++ 136                 <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
++ 137                     <div>
++ 138                         <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Meus Quadros</h2>
++ 139                         <p class="text-gray-600 dark:text-gray-400 mt-1">Organize seus projetos e tarefas</p>
++ 140                     </div>
++ 141                     <button onclick="showCreateBoardModal()" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity flex items-center justify-center">
++ 142                         <i class="fas fa-plus mr-2"></i>Novo Quadro
++ 143                     </button>
++ 144                 </div>
++ 145 
++ 146                 <div id="boardsList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
++ 147                     <!-- Boards will be rendered here -->
++ 148                 </div>
++ 149 
++ 150                 <div id="noBoardsMessage" class="text-center py-16 hidden">
++ 151                     <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full mb-4">
++ 152                         <i class="fas fa-clipboard text-gray-400 text-3xl"></i>
++ 153                     </div>
++ 154                     <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Nenhum quadro criado</h3>
++ 155                     <p class="text-gray-600 dark:text-gray-400 mb-6">Comece criando seu primeiro quadro de tarefas!</p>
++ 156                     <button onclick="showCreateBoardModal()" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity inline-flex items-center">
++ 157                         <i class="fas fa-plus mr-2"></i>Criar Primeiro Quadro
++ 158                     </button>
++ 159                 </div>
++ 160             </div>
++ 161         </div>
++ 162 
++ 163         <!-- Board View -->
++ 164         <div id="boardView" class="hidden p-4 h-[calc(100vh-73px)] overflow-x-auto">
++ 165             <div class="mb-4 flex items-center justify-between">
++ 166                 <div class="flex items-center space-x-3">
++ 167                     <button onclick="showBoards()" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
++ 168                         <i class="fas fa-arrow-left text-xl"></i>
++ 169                     </button>
++ 170                     <h2 id="boardTitle" class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white"></h2>
++ 171                 </div>
++ 172                 <div class="flex items-center space-x-2">
++ 173                     <button onclick="showAddListModal()" class="gradient-bg text-white px-4 py-2 rounded-lg font-semibold hover:opacity-90 transition-opacity text-sm md:text-base">
++ 174                         <i class="fas fa-plus mr-2"></i>Nova Lista
++ 175                     </button>
++ 176                     <button onclick="showDeleteBoardConfirm()" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-2 rounded-lg transition-colors">
++ 177                         <i class="fas fa-trash"></i>
++ 178                     </button>
++ 179                 </div>
++ 180             </div>
++ 181             
++ 182             <div id="listsContainer" class="flex space-x-4 pb-4 h-[calc(100%-80px)]">
++ 183                 <!-- Lists will be rendered here -->
++ 184             </div>
++ 185         </div>
++ 186     </div>
++ 187 
++ 188     <!-- Modals Container -->
++ 189     <div id="modalsContainer"></div>
++ 190 
++ 191     <script>
++ 192         // Initialize dark mode
++ 193         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
++ 194             document.documentElement.classList.add('dark');
++ 195         }
++ 196         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
++ 197             if (event.matches) {
++ 198                 document.documentElement.classList.add('dark');
++ 199             } else {
++ 200                 document.documentElement.classList.remove('dark');
++ 201             }
++ 202         });
++ 203 
++ 204         // Database Helper
++ 205         class Database {
++ 206             static get(key, defaultValue = null) {
++ 207                 const data = localStorage.getItem(key);
++ 208                 return data ? JSON.parse(data) : defaultValue;
++ 209             }
++ 210 
++ 211             static set(key, value) {
++ 212                 localStorage.setItem(key, JSON.stringify(value));
++ 213             }
++ 214 
++ 215             static remove(key) {
++ 216                 localStorage.removeItem(key);
++ 217             }
++ 218         }
++ 219 
++ 220         // Current State
++ 221         let currentUser = null;
++ 222         let currentBoardId = null;
++ 223 
++ 224         // Initialize App
++ 225         function initApp() {
++ 226             const savedUser = Database.get('currentUser');
++ 227             if (savedUser) {
++ 228                 currentUser = savedUser;
++ 229                 showMainApp();
++ 230             } else {
++ 231                 document.getElementById('authScreen').classList.remove('hidden');
++ 232             }
++ 233         }
++ 234 
++ 235         // Auth Functions
++ 236         function showLogin() {
++ 237             document.getElementById('loginForm').classList.remove('hidden');
++ 238             document.getElementById('registerForm').classList.add('hidden');
++ 239         }
++ 240 
++ 241         function showRegister() {
++ 242             document.getElementById('loginForm').classList.add('hidden');
++ 243             document.getElementById('registerForm').classList.remove('hidden');
++ 244         }
++ 245 
++ 246         function login() {
++ 247             const username = document.getElementById('loginUsername').value.trim();
++ 248             const password = document.getElementById('loginPassword').value;
++ 249 
++ 250             if (!username || !password) {
++ 251                 showAlert('Por favor, preencha todos os campos');
++ 252                 return;
++ 253             }
++ 254 
++ 255             const users = Database.get('users', []);
++ 256             const user = users.find(u => (u.email === username || u.email === username) && u.password === password);
++ 257 
++ 258             if (user) {
++ 259                 currentUser = { id: user.id, name: user.name, email: user.email };
++ 260                 Database.set('currentUser', currentUser);
++ 261                 showMainApp();
++ 262             } else {
++ 263                 showAlert('Email/usuário ou senha incorretos');
++ 264             }
++ 265         }
++ 266 
++ 267         function register() {
++ 268             const name = document.getElementById('registerName').value.trim();
++ 269             const email = document.getElementById('registerEmail').value.trim();
++ 270             const password = document.getElementById('registerPassword').value;
++ 271 
++ 272             if (!name || !email || !password) {
++ 273                 showAlert('Por favor, preencha todos os campos');
++ 274                 return;
++ 275             }
++ 276 
++ 277             if (password.length < 6) {
++ 278                 showAlert('A senha deve ter no mínimo 6 caracteres');
++ 279                 return;
++ 280             }
++ 281 
++ 282             const users = Database.get('users', []);
++ 283             
++ 284             if (users.find(u => u.email === email)) {
++ 285                 showAlert('Este email já está cadastrado');
++ 286                 return;
++ 287             }
++ 288 
++ 289             const newUser = {
++ 290                 id: Date.now().toString(),
++ 291                 name,
++ 292                 email,
++ 293                 password,
++ 294                 createdAt: new Date().toISOString()
++ 295             };
++ 296 
++ 297             users.push(newUser);
++ 298             Database.set('users', users);
++ 299 
++ 300             currentUser = { id: newUser.id, name: newUser.name, email: newUser.email };
++ 301             Database.set('currentUser', currentUser);
++ 302             
++ 303             showMainApp();
++ 304         }
++ 305 
++ 306         function logout() {
++ 307             showConfirmDialog('Tem certeza que deseja sair?', () => {
++ 308                 Database.remove('currentUser');
++ 309                 currentUser = null;
++ 310                 currentBoardId = null;
++ 311                 document.getElementById('mainApp').classList.add('hidden');
++ 312                 document.getElementById('authScreen').classList.remove('hidden');
++ 313                 showLogin();
++ 314             });
++ 315         }
++ 316 
++ 317         function showMainApp() {
++ 318             document.getElementById('authScreen').classList.add('hidden');
++ 319             document.getElementById('mainApp').classList.remove('hidden');
++ 320             document.getElementById('userNameDisplay').textContent = currentUser.name;
++ 321             showBoards();
++ 322         }
++ 323 
++ 324         // Boards Functions
++ 325         function showBoards() {
++ 326             document.getElementById('boardsView').classList.remove('hidden');
++ 327             document.getElementById('boardView').classList.add('hidden');
++ 328             currentBoardId = null;
++ 329             renderBoards();
++ 330         }
++ 331 
++ 332         function renderBoards() {
++ 333             const boards = getUserBoards();
++ 334             const boardsList = document.getElementById('boardsList');
++ 335             const noBoards = document.getElementById('noBoardsMessage');
++ 336 
++ 337             if (boards.length === 0) {
++ 338                 boardsList.innerHTML = '';
++ 339                 noBoards.classList.remove('hidden');
++ 340                 return;
++ 341             }
++ 342 
++ 343             noBoards.classList.add('hidden');
++ 344             boardsList.innerHTML = boards.map(board => `
++ 345                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer overflow-hidden card-animation" onclick="openBoard('${board.id}')">
++ 346                     <div class="h-32 gradient-bg"></div>
++ 347                     <div class="p-5">
++ 348                         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">${escapeHtml(board.name)}</h3>
++ 349                         <p class="text-sm text-gray-600 dark:text-gray-400">
++ 350                             <i class="fas fa-list mr-1"></i>${board.lists?.length || 0} listas
++ 351                         </p>
++ 352                     </div>
++ 353                 </div>
++ 354             `).join('');
++ 355         }
++ 356 
++ 357         function getUserBoards() {
++ 358             const allBoards = Database.get('boards', []);
++ 359             return allBoards.filter(b => b.userId === currentUser.id);
++ 360         }
++ 361 
++ 362         function showCreateBoardModal() {
++ 363             const modal = createModal('Criar Novo Quadro', `
++ 364                 <div class="space-y-4">
++ 365                     <div>
++ 366                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nome do Quadro</label>
++ 367                         <input type="text" id="newBoardName" class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="Ex: Projeto 2024, Tarefas Pessoais...">
++ 368                     </div>
++ 369                 </div>
++ 370             `, [
++ 371                 { text: 'Cancelar', class: 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg', onClick: () => closeModal() },
++ 372                 { text: 'Criar Quadro', class: 'px-4 py-2 gradient-bg text-white rounded-lg hover:opacity-90', onClick: createBoard }
++ 373             ]);
++ 374             
++ 375             setTimeout(() => document.getElementById('newBoardName').focus(), 100);
++ 376         }
++ 377 
++ 378         function createBoard() {
++ 379             const name = document.getElementById('newBoardName').value.trim();
++ 380             
++ 381             if (!name) {
++ 382                 showAlert('Por favor, digite um nome para o quadro');
++ 383                 return;
++ 384             }
++ 385 
++ 386             const boards = Database.get('boards', []);
++ 387             const newBoard = {
++ 388                 id: Date.now().toString(),
++ 389                 userId: currentUser.id,
++ 390                 name,
++ 391                 lists: [],
++ 392                 createdAt: new Date().toISOString()
++ 393             };
++ 394 
++ 395             boards.push(newBoard);
++ 396             Database.set('boards', boards);
++ 397             
++ 398             closeModal();
++ 399             renderBoards();
++ 400             
++ 401             // Open the new board
++ 402             setTimeout(() => openBoard(newBoard.id), 300);
++ 403         }
++ 404 
++ 405         function openBoard(boardId) {
++ 406             currentBoardId = boardId;
++ 407             const board = getBoard(boardId);
++ 408             
++ 409             if (!board) return;
++ 410 
++ 411             document.getElementById('boardsView').classList.add('hidden');
++ 412             document.getElementById('boardView').classList.remove('hidden');
++ 413             document.getElementById('boardTitle').textContent = board.name;
++ 414             
++ 415             renderLists();
++ 416         }
++ 417 
++ 418         function getBoard(boardId) {
++ 419             const boards = Database.get('boards', []);
++ 420             return boards.find(b => b.id === boardId);
++ 421         }
++ 422 
++ 423         function updateBoard(boardId, updates) {
++ 424             const boards = Database.get('boards', []);
++ 425             const index = boards.findIndex(b => b.id === boardId);
++ 426             if (index !== -1) {
++ 427                 boards[index] = { ...boards[index], ...updates };
++ 428                 Database.set('boards', boards);
++ 429             }
++ 430         }
++ 431 
++ 432         function showDeleteBoardConfirm() {
++ 433             showConfirmDialog('Tem certeza que deseja excluir este quadro? Todas as listas e tarefas serão removidas.', () => {
++ 434                 const boards = Database.get('boards', []);
++ 435                 const filtered = boards.filter(b => b.id !== currentBoardId);
++ 436                 Database.set('boards', filtered);
++ 437                 showBoards();
++ 438             });
++ 439         }
++ 440 
++ 441         // Lists Functions
++ 442         function renderLists() {
++ 443             const board = getBoard(currentBoardId);
++ 444             if (!board) return;
++ 445 
++ 446             const container = document.getElementById('listsContainer');
++ 447             container.innerHTML = board.lists.map(list => `
++ 448                 <div class="flex-shrink-0 w-80 bg-gray-100 dark:bg-gray-800 rounded-lg p-4 h-fit max-h-full flex flex-col" data-list-id="${list.id}">
++ 449                     <div class="flex items-center justify-between mb-4">
++ 450                         <h3 class="font-semibold text-gray-900 dark:text-white text-lg">${escapeHtml(list.name)}</h3>
++ 451                         <button onclick="deleteList('${list.id}')" class="text-gray-500 hover:text-red-500 transition-colors">
++ 452                             <i class="fas fa-trash"></i>
++ 453                         </button>
++ 454                     </div>
++ 455                     <div class="space-y-2 mb-4 overflow-y-auto flex-1" id="cards-${list.id}">
++ 456                         ${list.cards.map(card => renderCard(card, list.id)).join('')}
++ 457                     </div>
++ 458                     <button onclick="showAddCardModal('${list.id}')" class="w-full py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
++ 459                         <i class="fas fa-plus mr-2"></i>Adicionar Tarefa
++ 460                     </button>
++ 461                 </div>
++ 462             `).join('');
++ 463 
++ 464             // Initialize drag and drop for cards
++ 465             board.lists.forEach(list => {
++ 466                 const cardsContainer = document.getElementById(`cards-${list.id}`);
++ 467                 if (cardsContainer) {
++ 468                     Sortable.create(cardsContainer, {
++ 469                         group: 'cards',
++ 470                         animation: 150,
++ 471                         ghostClass: 'sortable-ghost',
++ 472                         dragClass: 'sortable-drag',
++ 473                         onEnd: function(evt) {
++ 474                             handleCardMove(evt);
++ 475                         }
++ 476                     });
++ 477                 }
++ 478             });
++ 479         }
++ 480 
++ 481         function renderCard(card, listId) {
++ 482             return `
++ 483                 <div class="bg-white dark:bg-gray-700 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer card-animation" data-card-id="${card.id}" onclick="showCardDetails('${listId}', '${card.id}')">
++ 484                     <h4 class="text-gray-900 dark:text-white font-medium mb-2">${escapeHtml(card.title)}</h4>
++ 485                     ${card.description ? `<p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">${escapeHtml(card.description)}</p>` : ''}
++ 486                     ${card.description ? '<div class="mt-2 flex items-center text-xs text-gray-500"><i class="fas fa-align-left mr-1"></i>Descrição</div>' : ''}
++ 487                 </div>
++ 488             `;
++ 489         }
++ 490 
++ 491         function showAddListModal() {
++ 492             const modal = createModal('Nova Lista', `
++ 493                 <div class="space-y-4">
++ 494                     <div>
++ 495                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nome da Lista</label>
++ 496                         <input type="text" id="newListName" class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="Ex: A Fazer, Em Progresso, Concluído...">
++ 497                     </div>
++ 498                 </div>
++ 499             `, [
++ 500                 { text: 'Cancelar', class: 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg', onClick: () => closeModal() },
++ 501                 { text: 'Criar Lista', class: 'px-4 py-2 gradient-bg text-white rounded-lg hover:opacity-90', onClick: createList }
++ 502             ]);
++ 503             
++ 504             setTimeout(() => document.getElementById('newListName').focus(), 100);
++ 505         }
++ 506 
++ 507         function createList() {
++ 508             const name = document.getElementById('newListName').value.trim();
++ 509             
++ 510             if (!name) {
++ 511                 showAlert('Por favor, digite um nome para a lista');
++ 512                 return;
++ 513             }
++ 514 
++ 515             const board = getBoard(currentBoardId);
++ 516             const newList = {
++ 517                 id: Date.now().toString(),
++ 518                 name,
++ 519                 cards: []
++ 520             };
++ 521 
++ 522             board.lists.push(newList);
++ 523             updateBoard(currentBoardId, { lists: board.lists });
++ 524             
++ 525             closeModal();
++ 526             renderLists();
++ 527         }
++ 528 
++ 529         function deleteList(listId) {
++ 530             showConfirmDialog('Deseja excluir esta lista e todas as suas tarefas?', () => {
++ 531                 const board = getBoard(currentBoardId);
++ 532                 board.lists = board.lists.filter(l => l.id !== listId);
++ 533                 updateBoard(currentBoardId, { lists: board.lists });
++ 534                 renderLists();
++ 535             });
++ 536         }
++ 537 
++ 538         // Cards Functions
++ 539         function showAddCardModal(listId) {
++ 540             const modal = createModal('Nova Tarefa', `
++ 541                 <div class="space-y-4">
++ 542                     <div>
++ 543                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Título da Tarefa</label>
++ 544                         <input type="text" id="newCardTitle" class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="Digite o título da tarefa...">
++ 545                     </div>
++ 546                     <div>
++ 547                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descrição (opcional)</label>
++ 548                         <textarea id="newCardDescription" rows="4" class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white resize-none" placeholder="Adicione mais detalhes sobre a tarefa..."></textarea>
++ 549                     </div>
++ 550                 </div>
++ 551             `, [
++ 552                 { text: 'Cancelar', class: 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg', onClick: () => closeModal() },
++ 553                 { text: 'Criar Tarefa', class: 'px-4 py-2 gradient-bg text-white rounded-lg hover:opacity-90', onClick: () => createCard(listId) }
++ 554             ]);
++ 555             
++ 556             setTimeout(() => document.getElementById('newCardTitle').focus(), 100);
++ 557         }
++ 558 
++ 559         function createCard(listId) {
++ 560             const title = document.getElementById('newCardTitle').value.trim();
++ 561             const description = document.getElementById('newCardDescription').value.trim();
++ 562             
++ 563             if (!title) {
++ 564                 showAlert('Por favor, digite um título para a tarefa');
++ 565                 return;
++ 566             }
++ 567 
++ 568             const board = getBoard(currentBoardId);
++ 569             const list = board.lists.find(l => l.id === listId);
++ 570             
++ 571             const newCard = {
++ 572                 id: Date.now().toString(),
++ 573                 title,
++ 574                 description,
++ 575                 createdAt: new Date().toISOString()
++ 576             };
++ 577 
++ 578             list.cards.push(newCard);
++ 579             updateBoard(currentBoardId, { lists: board.lists });
++ 580             
++ 581             closeModal();
++ 582             renderLists();
++ 583         }
++ 584 
++ 585         function showCardDetails(listId, cardId) {
++ 586             const board = getBoard(currentBoardId);
++ 587             const list = board.lists.find(l => l.id === listId);
++ 588             const card = list.cards.find(c => c.id === cardId);
++ 589 
++ 590             const modal = createModal('Detalhes da Tarefa', `
++ 591                 <div class="space-y-4">
++ 592                     <div>
++ 593                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Título</label>
++ 594                         <input type="text" id="editCardTitle" value="${escapeHtml(card.title)}" class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white">
++ 595                     </div>
++ 596                     <div>
++ 597                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descrição</label>
++ 598                         <textarea id="editCardDescription" rows="6" class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white resize-none">${escapeHtml(card.description || '')}</textarea>
++ 599                     </div>
++ 600                     <div class="pt-4 border-t border-gray-200 dark:border-gray-600">
++ 601                         <button onclick="deleteCard('${listId}', '${cardId}')" class="w-full py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
++ 602                             <i class="fas fa-trash mr-2"></i>Excluir Tarefa
++ 603                         </button>
++ 604                     </div>
++ 605                 </div>
++ 606             `, [
++ 607                 { text: 'Cancelar', class: 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg', onClick: () => closeModal() },
++ 608                 { text: 'Salvar', class: 'px-4 py-2 gradient-bg text-white rounded-lg hover:opacity-90', onClick: () => updateCard(listId, cardId) }
++ 609             ]);
++ 610         }
++ 611 
++ 612         function updateCard(listId, cardId) {
++ 613             const title = document.getElementById('editCardTitle').value.trim();
++ 614             const description = document.getElementById('editCardDescription').value.trim();
++ 615             
++ 616             if (!title) {
++ 617                 showAlert('Por favor, digite um título para a tarefa');
++ 618                 return;
++ 619             }
++ 620 
++ 621             const board = getBoard(currentBoardId);
++ 622             const list = board.lists.find(l => l.id === listId);
++ 623             const card = list.cards.find(c => c.id === cardId);
++ 624             
++ 625             card.title = title;
++ 626             card.description = description;
++ 627             
++ 628             updateBoard(currentBoardId, { lists: board.lists });
++ 629             
++ 630             closeModal();
++ 631             renderLists();
++ 632         }
++ 633 
++ 634         function deleteCard(listId, cardId) {
++ 635             closeModal();
++ 636             showConfirmDialog('Deseja excluir esta tarefa?', () => {
++ 637                 const board = getBoard(currentBoardId);
++ 638                 const list = board.lists.find(l => l.id === listId);
++ 639                 list.cards = list.cards.filter
